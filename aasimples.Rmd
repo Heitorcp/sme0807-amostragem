@@ -1,0 +1,66 @@
+---
+title: "amostragem_aleat_simples"
+author: "Heitor"
+date: "2023-04-26"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+# Amostragem Aleatória Simples 
+
+Comsidere uma população com $N = 4$ mulheres de quem foi indagado o número de filhos tidos nascidos vivos (variável $y$) 
+
+```{r}
+N = tibble(
+  `$i$` = seq(1,4),
+  `$y_i$` = c(0,0,2,1)
+)
+
+N
+```
+
+Criando o plano Amostral de $p_1$ 
+
+```{r}
+#creating all possible samples
+values = c(1,2,3,4) 
+combined.values <- t(data.frame(combn(values, 2)))
+#valores das amostras
+sample.values <- data.frame(c(0,0,0,0,0,2), c(0,2,1,2,1,1))
+#adding that to a dataframe 
+plano.amostral <- tibble(
+  unidades = seq(1,6),
+  amostras = paste("{", combined.values[,1], ", ", combined.values[,2], "}", sep = ""),
+  valores.amostra = paste("{", sample.values[,1], ", ", sample.values[,2], "}", sep = ""),
+  `$(t)$` = c(0,2,1,2,1,3),
+  `$p(s)$` = c(rep(1/6, times=6))
+)
+
+plano.amostral
+knitr::kable(plano.amostral, escape = FALSE)
+```
+
+```{r}
+# create a vector of numbers
+numbers <- c(1, 2, 3, 4, 5)
+
+# create a column of ordered pairs
+pairs_column <- paste("{", numbers, ", ", numbers, "}", sep="")
+
+# print the column
+pairs_column
+```
+Podemos verificar $\pi_i$ que é a probabilidade de inclusão para cada unidade da população. 
+
+### Probabilidade de inclusão da unidade na Amostra $(\pi)$
+
+No caso temos uma população de 4 elementos. $\pi_i$ refere-se a probabilidade de inclusão de cada rótulo da unidade na população. Ou seja, das 6 amostras possiveis quantas possuem o rotulo da unidade $i$?
+
+### Plano Amostral
+
+A definição de **plano amostral** é basicamente uma função que associa a cada amostra $s$ possível uma probabilidade dessa amostra ser escolhida.
+

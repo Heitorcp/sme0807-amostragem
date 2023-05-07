@@ -1,0 +1,85 @@
+# Estimação de Proporções 
+
+### Construção de intervalos de confiança 
+
+Exemplo 01
+
+```{r}
+s = as.data.frame(c(rep(1,60), rep(0,125-60)))
+names(s) <- c("y")
+
+s$N = 1000 
+s$n <- dim(s)[1] 
+s$x <- sum(s$y) 
+s$peso <- s$N/s$n
+
+N <- s$N[1]
+n <- s$n[1] 
+x <- s$x[1] 
+p=x/n 
+alpha=0.05
+```
+
+Lembrar que no caso de uma $AAS_c$ o cálculo do intervalo de confiança para proporções segue uma distribuição binomial. 
+
+Já, no caso de uma $AAS_s$ o cálculo do intervalo de confiança segue uma distribuição hipergeométrica. 
+
+Vamos fazer para o caso sem reposição 
+
+```{r}
+#Usando a distribuição hipergeometrica
+li <- qhyper(alpha/2, N*p, N-N*p,n)/n
+ls <- qhyper(1-alpha/2, N*p, N-N*p,n)/n
+c(p,li,ls)
+```
+## Intervalos de confiança utilizando a aproximação Normal 
+
+Os requisitos para que se possa usar tal aproximação são:
+
+* $n \ge 30$ e $N$ suficientemente grande 
+* A fração amostral $f = n/N$ deve ser pequena. 
+
+**Exemplo 5.3** 
+
+Objetivo: estimar a intenção de votação dos eleitores nos candidatos A e B. Foi realizada uma amostra AAs de 2000 eleitores. Desses, 900 votarão em A, 800 em B e os demais disseram estar indecisos. Supondo que o total de eleitores da pesquisa é de 4 milhões:
+
+a. Qual a proporção e quantos eleitores planejam votar em A? Obtenha um IC de 95% para os valores populacionais 
+
+```{r}
+
+N <- 4000000
+n <- 2000
+
+#proporcao de eleitores que votarão em A 
+
+p.A <- 900/2000
+p.A
+
+#estimativa do total de eleitores de A na população 
+N_A <- N*p.A
+
+#estimativa da variância populacional 
+var.A <- p.A*(1-p.A)/n
+
+#intervalo de confiança para a proporcao de candidatos em A (usando a aproximação normal com alpha de 5%) 
+li_P_A <- p.A - qnorm(0.975)*sqrt(var.A)
+ls_P_A <- p.A + qnorm(0.975)*sqrt(var.A)
+c(li_P_A, ls_P_A)
+
+#intervalo de confianca para o total de eleitores de A 
+li_N_A <- li_P_A*N
+ls_N_A <- ls_P_A*N
+
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+

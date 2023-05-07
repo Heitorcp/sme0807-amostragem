@@ -1,0 +1,425 @@
+---
+title: "Lista02 - SME0807 - Amostragem"
+author: "Heitor - 1183351, Mateus, Carol"
+date: "2023-04-24"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(sampling)
+library(reshape2)
+library(ggplot2)
+```
+
+## Lista 02 - SME0807 Elementos de Amostragem 
+
+### Exercício 3.1
+
+* Distribuição do estimador da Média 
+* Mostrar que valor esperado do estimador da média é a média 
+* Mostrar a variância do estimador da média como no corolário 3,4 
+* Encontrar a distribuição do estimador do desvio-padrão 
+
+
+```{r}
+dados_3.1 <- tibble(
+  `$i$` = c(seq(1,6)),
+  `$D$` = c(8,2,2,11,4,7)
+)
+
+dados_3.1
+
+knitr::kable(dados_3.1, escape = FALSE)
+```
+
+a. Encontre a distribuição da Média 
+
+```{r}
+#creating our sample 
+#number os samples
+ns <- t(combn(6,2)) 
+
+#samples 
+samples <- data.frame(paste("{", ns[,1], ", ", ns[,2], "}", sep = ""))
+samples <- samples %>% 
+  rename("samples" = "paste......ns...1.........ns...2........sep......")
+
+values <- data.frame(
+  c(rep(8,5), rep(2,4),rep(2,3), rep(11,2), 4),
+  c(2,2,11,4,7,2,11,4,7,11,4,7,4,7,7)
+)
+
+values <- values %>% 
+  rename("values1" = colnames(values)[1],
+         "values2" = colnames(values)[2])
+
+samples$values <- paste("{", values$values1, ", ", values$values2, "}", sep = "")
+
+#medias
+samples$mean <- rowMeans(values)
+
+#distribuicao das medias 
+mean.distribution <- table(samples$mean)
+mean.distribution <- t(mean.distribution)
+rownames(mean.distribution) <- c("$p(\\bar{y})$")
+mean.distribution
+
+knitr::kable(mean.distribution, escape = FALSE)
+```
+Verificando que o estimador $\bar{y}$ é não-viciado, ou seja $E(\bar{y}) = \mu$ 
+
+```{r}
+#calculando a media populacional 
+media.mu <- mean(dados_3.1$`$D$`)
+media.mu
+
+#calculando o estimador media amostral 
+mean.distribution.melt <- melt(mean.distribution, id.vars = colnames(mean.distribution))[,c(2,3)]
+mean.distribution.melt <- mean.distribution.melt %>% 
+  rename("media" = "Var2",
+         "prob" = "value")
+mean.distribution.melt$prob <- mean.distribution.melt$prob / sum(mean.distribution.melt$prob)
+mean.distribution.melt
+
+est.media.amostral <- sum(mean.distribution.melt[,1] * mean.distribution.melt[,2])
+est.media.amostral
+```
+No codigo acima, `media.mu` refere-se a média populacional e `est.media.amostral` refere-se ao estimador da média amostral
+
+Logo, podemos verificar que `media.mu` = `est.media.amostral`. 
+
+```{r}
+medias <- tibble(
+   "$\\mu$" = media.mu,
+   "$\\bar{y}$" = est.media.amostral
+)
+
+knitr::kable(medias)
+```
+
+b. Mostre que a Variância é como dada pelo Corolário 3.4 
+
+O Corolário 3.4 afirma que a variância amostral de $\bar{y}$ é dada por:
+
+$$
+Var(\bar{y}) = (1-f)\cdot S^2/n
+$$
+
+Sabemos que, para o plano $AAS_S$, $S^2$ é a variância populacional e $s^2$ é um estiamdor não-viesado de $S^2$
+
+O termo $(1-f)$ corresponde ao **fator de correção para populações finitas (FPC)** que é uma medida que leva em conta a diminuição da variância que ocorre nos estimadores devido ao processo ser sem reposição e, desse modo, o termo se faz necessário para garantir que a variância siga o **Teorema Central do Limite (TCL)** 
+
+Sabendo que $S^2$ é:
+
+$$
+S^2 = 1/(n-1)\cdot \sum_{i=1}^{N}(x_i - \mu)^2
+$$
+Podemos definir a variância do estimador $\bar{y}$ como a média de $S^2$ multiplicado pelo fator de correção da amostra $(1-f)$. Logo temos:
+
+$$
+Var(\bar{y}) = (1-f)\cdot S^2/n
+$$
+Conforme propõe o Corolário 3.4 
+
+c. Encontre a distribuição de $s^2$ e mostre que $E(s^2) = S^2$ 
+
+```{r, echo=FALSE}
+#calculando a variancia para as amostras 
+values$var <- apply(values, 1, var)
+samples$var <- values$var
+
+#distribuicao da variancia 
+distribuicao.s2 <- as.data.frame(table(samples$var))
+distribuicao.s2$prop <- distribuicao.s2$Freq / sum(distribuicao.s2$Freq)
+distribuicao.s2 <- distribuicao.s2 %>% rename(
+  "$s^2$" = "Var1"
+)
+
+knitr::kable(t(distribuicao.s2[,c(1,3)]))
+```
+**Mostre que $E(s^2) = S^2$** 
+
+
+
+### Exercício 3.3 
+
+Determine o tamanho da amostra $n$, quando $B = 0.03$, $\alpha = 0.01$ e $s^2 = 3.6$ 
+
+```{r}
+sample.size <- function(B,alpha,variance, replace=FALSE){
+  
+z_critical <- -qnorm(p=alpha/2)
+
+n <- (variance * z_critical**2) / B**2
+  
+return (n)
+
+}
+
+sample.size(B=0.03, alpha = 0.01, variance = 3.6)
+```
+Para obtermos um erro de 3% com uma confiança de 99%, seria necessário uma amostra de 26540 unidades.
+
+### Exercício 3.9 
+
+```{r}
+#lendo os dados 
+tab2.8 <- read.csv("./dados/CAP_02_tab_2_8.csv")
+tab2.8
+
+#medias populacionais 
+media.X <- mean(tab2.8$X)
+media.Y <- mean(tab2.8$Y)
+
+cat("Media de X", media.X,"\n","Media de Y",media.Y)
+```
+
+**a)**
+
+Selecionando uma amostra de tamanho 10 e outra de 20
+
+```{r}
+n <- 10
+N <- nrow(tab2.8)
+
+sampler.withRep <- function(data,n){
+  sample <- getdata(data, srswr(n, nrow(data))) 
+  
+  return(sample)
+}
+
+amostra.10 <- sampler.withRep(tab2.8, 10)
+amostra.20 <- sampler.withRep(tab2.8, 20)
+
+```
+
+**Amostra de tamanho 10** 
+
+```{r}
+amostra.10
+```
+
+**Amostra de tamanho 20**
+
+```{r}
+amostra.20
+```
+**Calculando a média amostral** 
+
+```{r}
+#calculo das medias amostrais para as variaveis 
+mediaX.amostra10 <- mean(amostra.10$X)
+mediaX.amostra20 <- mean(amostra.20$X)
+mediaY.amostra10 <- mean(amostra.10$Y)
+mediaY.amostra20 <- mean(amostra.20$Y)
+
+
+cat("Medias de X", mediaX.amostra10, mediaX.amostra20,"\n",
+    "Medias de Y", mediaY.amostra10, mediaY.amostra20)
+```
+
+**Intervalos de Confiança para as médias amostrais**
+
+```{r}
+margem.erro.amostra10X <- qnorm(.975)*sqrt(var(amostra.10$X)/nrow(amostra.10))
+margem.erro.amostra20X <- qnorm(.975)*sqrt(var(amostra.20$X)/nrow(amostra.10))
+margem.erro.amostra10Y <- qnorm(.975)*sqrt(var(amostra.10$Y)/nrow(amostra.20))
+margem.erro.amostra20Y <- qnorm(.975)*sqrt(var(amostra.20$Y)/nrow(amostra.20))
+
+IC.media.amostra10X <- round(c(mediaX.amostra10 - margem.erro.amostra10X, mediaX.amostra10 + margem.erro.amostra10X),2) 
+IC.media.amostra20X <- round(c(mediaX.amostra20 - margem.erro.amostra20X, mediaX.amostra20 + margem.erro.amostra20X),2) 
+IC.media.amostra10Y <- round(c(mediaY.amostra10 - margem.erro.amostra10Y, mediaY.amostra10 + margem.erro.amostra10Y),2) 
+IC.media.amostra20Y <- round(c(mediaY.amostra20 - margem.erro.amostra20Y, mediaY.amostra20 + margem.erro.amostra20Y),2) 
+
+#Construindo os intervalos de confiança 
+IC.media.amostra10X
+IC.media.amostra20X
+IC.media.amostra10Y
+IC.media.amostra20Y
+
+#criando uma tibble com os intervalos de confianca 
+ICs <- tibble(
+  "Variavel" = c("X","Y"),
+  "IC.Amostra.10" = c(paste(IC.media.amostra10X, collapse = ", "),paste(IC.media.amostra10Y, collapse = ", ")),
+  "IC.Amostra.20" = c(paste(IC.media.amostra20X, collapse = ", "),paste(IC.media.amostra20Y, collapse = ", "))
+)
+
+knitr::kable(ICs)
+```
+
+**b.) Considere a amostra de tamanho 20 de a. Qual o tamanho da amostra para que tenhamos uma estimativa duas vezes mais precisa?**
+
+
+Para termos uma estimativa duas vezes mais precisa precisamos que a nossa margem de erro em ambas as variáveis seja a metade do valor calculado.
+
+Vamos usar a variância populacional para o cálculo do tamanho da amostra.
+
+```{r}
+#calculo das variâncias 
+var.X <- var(amostra.20$X)
+var.Y <- var(amostra.20$Y)
+
+#calculo do tamanho da amostra 
+n.X <- var.X*qnorm(0.975)**2/(margem.erro.amostra20X/2)**2
+n.Y <- var.Y*qnorm(0.975)**2/(margem.erro.amostra20Y/2)**2
+
+n.X
+n.Y
+
+
+```
+**Para a variável X seria necessária uma amostra duas vezes maior e para a variável Y uma amostra 4 vezes maior.**
+
+**c) Obtenha uma estimativa pontual e intervalar, com $\alpha = 5\%$ para a proporção de residências com mais de três residentes. Qual o tamanho da amotra para obtenção de uma estimativa duas vees mais precisa?**
+
+```{r}
+N <- nrow(tab2.8)
+n <- 20
+
+#amostras 
+amostra.20
+
+#filtrando o df para Y>3
+filtered.amostra.20 <- filter(amostra.20, Y>3)
+
+#proporcao de  residencias com mais de 3 residentes 
+p.maior.3 <- nrow(filtered.amostra.20)/nrow(amostra.20)
+p.maior.3
+
+### estimativa intervalar 
+
+#estimativa da variancia
+var_hat <- p.maior.3*(1-p.maior.3)
+
+#margem de erro 
+m_erro <- qnorm(0.975)*sqrt(var_hat/n)
+
+#intervalos de confianca 
+li_p_maior3 <- p.maior.3 - m_erro
+ls_p_maior3 <- p.maior.3 + m_erro
+
+c(p.maior.3, li_p_maior3, ls_p_maior3)
+
+#tamanho da amostra para reduzir o erro pela metade 
+tamanho.amostra <- sample.size(m_erro/2, 0.05, variance = p.maior.3*(1-p.maior.3))
+tamanho.amostra
+```
+A estimativa pontual $\hat{p} = 0.55$ e a estimativa intervalar é $(0.33, 0.77)$ 
+
+Para obter um erro de estimação duas vezes menor é necessário uma amostra de tamanho $n = 80$
+
+### Exercício 3.10
+
+```{r}
+#gerando a populacao pedida 
+N = 100 
+dados <- rnorm(N,50,16)
+
+#gerando 500 amostras de tamenho 10
+amostras.10 <- vector("list", length = 500) 
+for (i in 1:500){
+  amostras.10[[i]] <- sample(dados, 10, replace = FALSE)
+}
+
+#gerando 500 amostras de tamanho 20 
+amostras.20 <- vector("list", length = 500)
+for (i in 1:500){
+  amostras.20[[i]] <- sample(dados, 20, replace = FALSE)
+}
+
+#calculando a media para cada amostra 
+medias.amostra.10 <- data.frame(matrix(ncol = 1, nrow = 500))
+medias.amostra.20 <- data.frame(matrix(ncol = 1, nrow = 500))
+colnames(medias.amostra.10) <- c("Media_amostral") 
+colnames(medias.amostra.20) <- c("Media_amostral") 
+
+for (i in 1:500){
+  medias.amostra.10[i,] <- mean(amostras.10[[i]])
+}
+
+for (i in 1:500){
+  medias.amostra.20[i,] <- mean(amostras.20[[i]])
+}
+```
+
+```{r}
+#plotando o histograma das amostras 
+hist_10 <- hist(medias.amostra.10$Media_amostral, col = 'skyblue', main = "Distribuição das Médias da Amostra de Tamanho 10", plot = TRUE)
+```
+
+```{r}
+hist_20 <- hist(medias.amostra.20$Media_amostral, col = 'lightgreen', main = "Distribuição das Médias da Amostra de Tamanho 20", plot = TRUE)
+```
+Percebemos que conforme o tamanho da amostra aumenta a distribuição da média se aproxima mais de uma disribuição Normal.
+
+### Exercício 3.16
+
+```{r}
+dados.livros <- as.data.frame(c(28,25,23,33,31,18,22,29,30,22,26,20,21,28,25))
+colnames(dados.livros) <- "n.livros"
+
+N.prateleiras <- 130
+
+dados.livros
+```
+**a. Contrua um intervalo de confiança para T (o total de livros de Estatística)**
+
+Sabemos que temos um total de 130 prateleiras, logo $N = 130$.
+
+Em seguida, a fim de estimar o total populacional $\tau$ podemos usar o estimador do total $T = N\cdot \bar{y}$, onde $\bar{y}$ representa a **média amostral**. 
+
+Sabemos que a média amostral é:
+
+$$
+{\displaystyle {\bar {y}}={\frac {1}{N}}\sum _{i=1}^{N}X_{i}.}
+$$
+Onde $X_i$ é o vetor contendo as amotras das 15 prateleiras. 
+
+Desse modo, pode-se concluir que $\bar{y} = 25.4$, logo $T = 25.4~\cdot 130 = 3302$
+
+Como o tamanho da amostra é $n < 30$ não podemos considerar a aproximação Normal e desprezar o fator de correção de populações finitas para o cálculo da variância. Desse modo, a variância do total pode ser estimada do seguinte modo:
+
+$$
+Var(T) = (1-f)\cdot S^2/n-1
+$$
+Em que $f = n/N$
+```{r}
+#estimativa do total 
+est_total <- mean(dados.livros$n.livros)*130
+est_total
+
+#intervalo de confiança para a estimativa do total 
+var.amostra <- var(dados.livros)
+
+#estimacao da varinaca do total 
+
+```
+
+### Exercício 3.19
+
+* Suposições para construção de um intervalo de confiança 
+* Tamanho da amostra para obter um erro inferior a X com 95% de confiança.
+
+### Exercício 3.29 
+
+* Estimativa do erro padrão do estimador da média.
+* Suposições para fazer a estimativa 
+
+### Exercício 3.34
+
+* Mostrar a fórmula do intervalo de confiança para o total populacional $\tau$ 
+
+* Usar o resultado para construir um intervalo para o total de faltas no Ex 3.5 
+
+### Exercício 3.40 
+
+* Mostrar que um estimador não é viciado 
+
+### Exercício 3.42
+
+* Discutir a obtenção das fórmulas de tamanho da amostra para a média e o total nos casos AASs e AASc
+
+### Exercício 2
+

@@ -1,0 +1,297 @@
+---
+title: "SME 0807 - Técnicas de Amostragem"
+author: "Vicente G. Cancho"
+date: "2023-04-18"
+#documentclass: article
+header-includes:
+- \usepackage[T1]{fontenc}
+- \usepackage[utf8]{inputenc}  
+- \usepackage {amsmath}
+-  \usepackage{setspace}\singlespacing
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+  word_document: default
+fig_width: 10
+fontsize: 12pt
+geometry: margin=0.75in
+fig_height: 6
+classoption: a4paper
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1. Amostragem Aleatória Simples com reposição (AASc)
+
++ A principal caracterização para o uso do plano AAS é a existência de um sistema de referências completo, descrevendo cada umas das  unidades elementares.
++ Desse modo, tem-se o universo bem listado:
+  $$\boldsymbol{U}=\{1, 2, 3, \ldots, N\}.$$
+
+**Plano Amostral** 
+
++ Utilizando-se um procedimento aleatório (tabela de números aleatórios, urna, etc.), sorteia-se com igual probabilidade um elemento da população $\mathcal{U}$;
+
++ Repete-se o processo anterior até que sejam sorteadas $n$ unidades ($n$ prefixado previamente);
++ Caso seja permitido o sorteio de uma unidade mais de uma vez, tem-se o plano AAS com reposição (AASc). Quando o elemento sorteado é removido de $\mathcal{U}$ antes do sorteio do próximo, tem-se o plano AAS sem reposição (AASs).
+
+**Exemplo 1:** Os dados contêm renda familiar e metadados em uma das dezesseis regiões das Filipinas.
+```{r, message=FALSE}
+library(ineq)
+data(Ilocos)
+D = Ilocos
+head(D)
+N=nrow(D)
+N
+set.seed(1234)
+n=30
+I=sample(1:N,n,replace = TRUE )
+I
+ds=D[I,]
+
+```
+- Supor que temos interesse na renda média familiar das famílias.
+- Parâmetros de interesse:
+
+- $\tau=\displaystyle\sum_{i=1}^NY_i$ (total),  
+- $\mu=\overline{Y}=\dfrac{\displaystyle\sum_{i=1}^NY_i}{N}$ (média) 
+- $\sigma^2=\frac{\displaystyle\sum_{i=1}^N(Y_i-\mu)^2}{N}$ (Variância)   
+- $S^2_{_N}=\dfrac{\displaystyle\sum_{i=1}^N(Y_i-\mu)^2}{N-1}$ (Variância) 
+  
+```{r}
+Y=D[,1]
+
+tau=sum(Y)  # Total
+tau
+mu=mean(Y)  # Média
+mu
+SN=var(Y)
+SN
+Sigma2=(N-1)*SN/N
+Sigma2
+```
+
+- Suponha que queremos estimativa de $\mu$ e seu respectivo intervalo de 95\% confiança para $\mu$ 
+- Uma estimativa de $\mu$ é $\bar{y}$
+- Vimos que 
+$$\left(\bar{y}-z_{\alpha/2}\sqrt{\frac{s^2}{n}}; \bar{y}+z_{\alpha/2}\sqrt{\frac{s^2}{n}}\right)$$
+é um intervalo para $\mu$ com coeficiente de confiança aproximadamente igual a $1-\alpha$.
+
+```{r, message=FALSE}
+set.seed(1234)
+n=30
+I=sample(1:N,n,replace = TRUE )
+I
+ds=D[I,]
+y=ds[,1] # renda familiar
+bary=mean(y)
+bary
+S2=var(y)
+S2
+alpha=0.05
+B=qnorm(0.975)*sqrt(S2/n)
+B
+c(bary-B, bary+B)
+```
+## 2. Amostragem Aleatória Simples sem reposição (AASs)
+
+
+- A AASs opera de modo idêntico à AASc, alterando-se apenas item 
+ 
+- A população está numerada de 1 a $N$, de acordo com o sistema de referências, ou seja,
+          $$\mathcal{U}=\{1, 2, 3, \ldots, N\};$$
+          
+- **Plano Amostral**  
+  + Utilizando-se um procedimento aleatório (tabela de números aleatórios, urna, programa de computador, etc.), sorteia-se, com igual probabilidade, uma das $N$ unidades da população;
+  
+  + Soteia-se um elemento seguinte, com o elemento anterior sendo retirado da   população;
+  + Repete-se o procedimento até que $n$ unidades tenham sido sorteadas.
+ 
+```{r}
+set.seed(1234)
+n=30
+Is=sample(1:N,n,replace = FALSE )
+Is
+dss=D[Is,]
+ys=dss[,1] # renda familiar
+bays=mean(ys)
+bays
+S2s=var(ys)
+S2s
+f=n/N
+alpha=0.05
+Bs=qnorm(0.975)*sqrt((1-f)*S2s/n)
+Bs
+c(bays-Bs, bays+Bs)
+
+```
+## O pacote **sampling** do R na AAS
+```{r,message=FALSE}
+library(sampling)
+library(ineq)
+data(Ilocos)
+N <- nrow(Ilocos)
+N 
+## Amostragem Aleatório Simples com Reposição
+
+set.seed(1234)
+n=30
+ind =srswr(n,N)
+# cada unidade i está associada ao índice 1 ou 0, com indicando seleção
+ind
+aasc <- getdata(Ilocos,ind)
+aasc
+y=aasc$income
+bary=mean(y)
+bary
+S2=var(y)
+S2
+alpha=0.05
+B=qnorm(0.975)*sqrt(S2/n)
+B
+c(bary-B, bary+B)
+
+### Amostra Aleatório Simples sem Reposição
+set.seed(1234)
+n=30
+inds =srswor(n,N)
+inds
+aass <- getdata(Ilocos,inds)
+aass
+ys=aass$income
+barys=mean(ys)
+barys
+S2s=var(ys)
+S2s
+
+f=n/N
+alpha=0.05
+Bs=qnorm(0.975)*sqrt((1-f)*S2s/n)
+Bs
+c(barys-Bs, barys+Bs)
+
+```
+
+
+## 3. Pesos de Amostragem 
+- Definimos $\pi_i$ como sendo a probabilidade da unidade $i$ ser incluída na amostra. 
+- Na amostragem probabilística, essas probabilidades de inclusão são usadas para calcular estimativas pontuais como $t$ e $\bar{y}$.
+
+- Defina o peso da amostragem, às vezes chamado de peso do delineamento, para ser o recíproco da probabilidade de inclusão:
+\[
+w_i=\dfrac{1}{\pi_i}
+\]
+- O peso amostral da unidade amostrada $i$ pode ser interpretado como o número de unidades populacionais representadas pela unidade $i.$
+
+- Em um AAS, cada unidade tem probabilidade de inclusão $\pi=n/N$; consequentemente, todos os pesos de amostragem são os mesmos com $$w_i=\dfrac{1}{\pi_i}=\frac{N}{n}.$$ 
+- Assim, podemos pensar em cada unidade da amostra como representando o mesmo número de unidades, $N/n,$  na população — ela mesma mais $N/n − 1$ das unidades não amostradas.
+-  Chamamos essa amostra, na qual cada unidade tem o mesmo peso amostral, uma amostra de autoponderação.
+
+- Obviamente, não criamos um arquivo de dados físico com N entradas. Em vez disso, usamos os pesos de amostragem diretamente para todos os cálculos. 
+
+- O tamanho da população é estimado pela soma dos pesos da amostra
+
+\begin{equation}
+\widehat{N}=\sum_{i\in S} w_i
+\end{equation}
+
+- O total da população para a variável y é estimado por
+
+\begin{equation}
+t=\sum_{i\in S} w_iy_i
+\end{equation}
+
+- A média populacional é estimada por
+
+\begin{equation}
+\bar{y}=\frac{\sum_{i\in S} w_iy_i}{\sum_{i\in S} w_i}
+\end{equation}
+- O pacote *survey* utiliza as expressões acima para estimar o total e a média populacional em todos tipos de delineamento amostrais.
+- Para AAS, $w_i=N/n$, as expressões se simplica 
+\[
+\begin{split}
+\widehat{N}&=\sum_{i\in S} \frac{N}{n}=N\\
+t&=\sum_{i\in S} w_iy_i=\frac{N}{n}\sum_{i\in S}y_i=N\bar{y}\\
+\bar{y}&=\frac{1}{n}\sum_{i\in S} y_i
+\end{split}
+\]
+```{r,message=FALSE}
+library(survey)
+library(sampling)
+library(ineq)
+data(Ilocos)
+N <- nrow(Ilocos)
+N 
+set.seed(1234)
+index <- srswor(30,N)
+index
+amostra <- getdata(Ilocos,index)
+nrow(amostra)
+head(amostra)
+amostra <- Ilocos[(1:N)[index==1],] # Alternativa
+head(amostra)
+## Criando os pesos de amostragem
+n <- nrow(amostra)
+amostra$w <- rep(N/n,n)
+head(amostra)
+# Verifique se a soma dos pesos é N
+sum(amostra$w)
+## O pacote survey
+dsrs <- svydesign(id = ~1, weights = ~amostra$w, fpc=rep(N,n),data=amostra)
+names(dsrs)
+smean <- svymean(~amostra$income,dsrs)
+smean
+confint(smean, level=0.95)
+# Repita essas etapas com a função svytotal para obter a estimativa do total.
+stotal <- svytotal(~amostra$income,dsrs)
+stotal
+confint(stotal, level=0.95)
+```
+## Normalidade assintótica da média amostral e total
+```{r}
+
+nREP=1000
+iter=0
+N=NULL
+U=NULL
+E=NULL
+Du=NULL
+n=100
+mu=3
+sig=2
+D=c(2,3,7,9,1,10)
+while (iter<nREP) {
+set.seed(1234+iter)
+y=rnorm(n,mu,sig)
+z=runif(n,2,4)
+w=rexp(n,2)
+d=sample(D,n, replace=TRUE)
+N=rbind(N,c(mean(y),sum(y)))  
+U=rbind(U,c(mean(z),sum(z)))  
+E=rbind(E,c(mean(w),sum(w)))
+Du=rbind(Du,c(mean(d),sum(d)))
+iter=iter+1  
+}
+par(mfrow=c(1,2))
+hist(N[,1],xlab=expression(bar(X)),prob=T,main="Normal")
+hist(N[,2],xlab=expression(hat(tau)),prob=T,main="Normal")
+hist(U[,1],xlab=expression(bar(X)),prob=T,main="Uniforme")
+hist(U[,2],xlab=expression(hat(tau)),prob=T,main="Uniforme")
+hist(E[,1],xlab=expression(bar(X)),prob=T,main="Exponencial")
+hist(E[,2],xlab=expression(hat(tau)),prob=T,main="Exponencial")
+hist(Du[,1],xlab=expression(bar(X)),prob=T,main="População finita")
+
+hist(Du[,2],xlab=expression(hat(tau)),prob=T,main="População finita")
+
+
+```
+
+
+## Bibliografia 
+
+- LOHR, Sharon L. Sampling: design and analysis. CRC press, 2021.
+
+/
